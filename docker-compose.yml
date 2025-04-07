@@ -1,0 +1,81 @@
+version: '3'
+
+services:
+  # Serviço do Laravel (Backend)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecommercesol-backend
+    restart: unless-stopped
+    working_dir: /var/www/
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - ecommercesol-network
+    depends_on:
+      - db
+
+  # Serviço do Vue.js (Frontend)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ecommercesol-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - ecommercesol-network
+    depends_on:
+      - backend
+
+  # Serviço do MySQL
+  db:
+    image: mysql:8.0
+    container_name: ecommercesol-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ecommercesol
+      MYSQL_USER: ecommercesol
+      MYSQL_PASSWORD: ecommercesol123
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - ecommercesol-network
+
+  # Serviço do phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ecommercesol-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - ecommercesol-network
+    depends_on:
+      - db
+
+networks:
+  ecommercesol-network:
+    driver: bridge
+
+volumes:
+  dbdata:
