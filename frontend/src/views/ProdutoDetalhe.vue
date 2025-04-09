@@ -1,6 +1,6 @@
 <template>
   <div class="produto-detalhe">
-    <section class="product-content bg-white py-16">
+    <section class="product-content bg-white py-32 pb-16">
       <div class="container mx-auto px-4">
         <div class="max-w-6xl mx-auto">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-12">

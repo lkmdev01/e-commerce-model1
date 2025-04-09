@@ -1,7 +1,7 @@
 <template>
   <div class="carrinho min-h-screen py-16">
     <div class="container mx-auto px-4">
-      <h1 class="text-3xl font-bold text-gray-800 mb-8">Seu Carrinho</h1>
+      <h1 class="text-3xl font-bold text-gray-800 mt-10 mb-8">Seu Carrinho</h1>
       
       <div v-if="cartStore.items.length > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Lista de Produtos -->

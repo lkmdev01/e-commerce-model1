@@ -1,11 +1,11 @@
 <template>
   <section class="relative hero flex items-center justify-center overflow-hidden">
-    <div class="container px-4 py-56 relative z-10 text-center">
-      <h1 class="text-6xl md:text-8xl font-bold mb-6">YASMIM SOL</h1>
-      <h2 class="text-2xl md:text-3xl mb-8">NOVIDADES NA LOJA!</h2>
+    <div class="container px-4 py-20 md:py-56 relative z-10 text-center">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-4 md:mb-6">YASMIM SOL</h1>
+      <h2 class="text-xl sm:text-2xl md:text-3xl mb-6 md:mb-8">NOVIDADES NA LOJA!</h2>
       <router-link 
         to="/comprar" 
-        class="inline-block cta-button rounded-sm transition-colors"
+        class="inline-block cta-button rounded-sm transition-colors text-sm sm:text-base px-4 py-2 md:px-6 md:py-3"
       >
         COMPRAR AGORA
       </router-link>
@@ -19,10 +19,17 @@
 
 <style scoped>
 .hero {
-  background-image: url(/images/bg-home.jpg	);
-  background-position: center right;
+  background-image: url(/images/bg-home.jpg);
+  background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  min-height: 60vh;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    min-height: 80vh;
+  }
 }
 
 .hero::before {
@@ -36,27 +43,22 @@
 }
 
 h1 {
-  font-size: 4rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
   color: #8B008B;
-}
-
-p {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .cta-button {
-  display: inline-block;
-  padding: 0.7rem 2rem;
   background-color: #8B008B;
   color: white;
   text-decoration: none;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .cta-button:hover {
   background-color: #6a006a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 </style> 
