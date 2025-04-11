@@ -28,13 +28,13 @@ WORKDIR /var/www/html
 # Copiar arquivos do projeto
 COPY . .
 
-# Ajustar permissões
-RUN chown -R www-data:www-data /var/www/html && \
-  chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && \
-  chmod -R 775 /var/www/html/storage/framework/views && \
-  chmod -R 775 /var/www/html/storage/framework/cache && \
-  chmod -R 775 /var/www/html/storage/framework/sessions && \
-  chmod -R 775 /var/www/html/storage/logs
+# Criar diretórios necessários e ajustar permissões
+RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache} \
+  && mkdir -p /var/www/html/storage/logs \
+  && chown -R www-data:www-data /var/www/html \
+  && find /var/www/html/storage -type d -exec chmod 775 {} \; \
+  && find /var/www/html/storage -type f -exec chmod 664 {} \; \
+  && chmod -R 775 /var/www/html/bootstrap/cache
 
 # Instalar dependências do Composer
 RUN composer install --no-interaction --no-scripts
@@ -47,7 +47,8 @@ RUN php artisan key:generate && \
 # Configurar o DocumentRoot do Apache
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-USER www-data
+# Manter o usuário root para permitir ajustes de permissão em tempo de execução
+USER root
 
 EXPOSE 80
 

@@ -2,13 +2,39 @@
   <div class="produto-detalhe">
     <section class="product-content bg-white py-32 pb-16">
       <div class="container mx-auto px-4">
-        <div class="max-w-6xl mx-auto">
+        <!-- Loading -->
+        <div v-if="loading" class="flex justify-center items-center py-12">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#9810FA]"></div>
+          <p class="ml-2 text-gray-600">Carregando produto...</p>
+        </div>
+        
+        <!-- Error Message -->
+        <div v-else-if="error" class="text-center py-12">
+          <p class="text-red-600">{{ error }}</p>
+          <button @click="fetchProduto" class="mt-4 px-4 py-2 bg-[#9810FA] text-white rounded-md hover:bg-[#7a0dc8]">
+            Tentar novamente
+          </button>
+          <div class="mt-4">
+            <router-link to="/" class="text-[#9810FA] hover:underline">Voltar para a página inicial</router-link>
+          </div>
+        </div>
+        
+        <!-- Produto não encontrado -->
+        <div v-else-if="!produto" class="text-center py-12">
+          <p class="text-gray-600">Produto não encontrado.</p>
+          <div class="mt-4">
+            <router-link to="/" class="text-[#9810FA] hover:underline">Voltar para a página inicial</router-link>
+          </div>
+        </div>
+        
+        <!-- Produto -->
+        <div v-else class="max-w-6xl mx-auto">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
             <!-- Imagem do Produto -->
             <div class="relative">
               <img 
-                :src="produto?.image" 
-                :alt="produto?.name"
+                :src="produto.image_url || '/images/product-placeholder.jpg'" 
+                :alt="produto.name"
                 class="w-full h-[500px] object-cover rounded-lg shadow-lg"
               >
             </div>
@@ -16,12 +42,12 @@
             <!-- Informações do Produto -->
             <div class="space-y-6">
               <div>
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">{{ produto?.name }}</h2>
-                <p class="text-2xl font-bold text-[#9810FA]">R$ {{ produto?.price }}</p>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">{{ produto.name }}</h2>
+                <p class="text-2xl font-bold text-[#9810FA]">R$ {{ formatPrice(produto.price) }}</p>
               </div>
 
               <div class="border-t border-b border-gray-200 py-6">
-                <p class="text-gray-600 leading-relaxed">{{ produto?.description || 'Inspirational posters are a great way to be inspired and encouraged to take on new challenges and adventures. Hang up a poster at home or in the office to be reminded how much beauty awaits in the world, luring you out of your comfort zone and into a world where possibility resides.' }}</p>
+                <p class="text-gray-600 leading-relaxed">{{ produto.description }}</p>
               </div>
 
               <div class="flex items-center gap-4">
@@ -71,39 +97,62 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
-
-interface Produto {
-  id: number | string;
-  name: string;
-  category: string;
-  price: string;
-  image: string;
-  description?: string;
-}
+import { productService, type Product } from '@/services/api'
 
 const route = useRoute()
 const quantidade = ref(1)
-const produto = ref<Produto | null>(null)
+const produto = ref<Product | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 const cartStore = useCartStore()
 
-onMounted(() => {
-  // Aqui você faria uma chamada à API para buscar os detalhes do produto
-  // usando o ID da rota (route.params.id)
-  // Por enquanto vamos simular com dados estáticos
-  produto.value = {
-    id: String(route.params.id),
-    name: 'Poster V1',
-    category: 'Posters',
-    price: '23.99',
-    image: '/images/product1.jpg',
-    description: 'Inspirational posters are a great way to be inspired and encouraged to take on new challenges and adventures.'
+// Buscar detalhes do produto da API
+const fetchProduto = async () => {
+  try {
+    const productId = Number(route.params.id)
+    if (isNaN(productId)) {
+      error.value = 'ID do produto inválido'
+      return
+    }
+    
+    loading.value = true
+    error.value = null
+    produto.value = await productService.getById(productId)
+    
+    // Verificar se o produto está ativo
+    if (produto.value && !produto.value.active) {
+      error.value = 'Este produto não está disponível no momento.'
+      produto.value = null
+    }
+  } catch (err) {
+    console.error('Erro ao buscar produto:', err)
+    error.value = 'Não foi possível carregar os detalhes do produto.'
+    produto.value = null
+  } finally {
+    loading.value = false
   }
-})
+}
+
+// Formatar preço para exibição
+const formatPrice = (price: number): string => {
+  return price.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
 
 const adicionarAoCarrinho = () => {
   if (!produto.value) return
-  cartStore.addItem(produto.value, quantidade.value)
+  
+  cartStore.addItem({
+    id: produto.value.id,
+    name: produto.value.name,
+    price: produto.value.price,
+    image: produto.value.image_url || '/images/product-placeholder.jpg'
+  }, quantidade.value)
 }
+
+onMounted(fetchProduto)
 </script>
 
 <style scoped>

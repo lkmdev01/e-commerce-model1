@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: ecommercesol-backend
     restart: unless-stopped
-    working_dir: /var/www/
+    working_dir: /var/www/html
     ports:
       - "8000:80"
     volumes:

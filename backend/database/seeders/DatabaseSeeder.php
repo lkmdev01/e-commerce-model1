@@ -12,7 +12,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            ProductSeeder::class,
+            UserSeeder::class,
+            CategorySeeder::class,
+            // ProductSeeder::class, // Descomente caso queira popular produtos
         ]);
     }
 }
