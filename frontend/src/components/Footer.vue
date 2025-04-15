@@ -22,7 +22,7 @@
 
         <!-- Logo -->
         <div class="text-xl md:text-2xl font-bold text-gray-900">
-          YASMIM SOL
+          LOJA VIRTUAL
         </div>
 
         <!-- Copyright -->

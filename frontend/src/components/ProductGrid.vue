@@ -2,15 +2,15 @@
   <section class="py-8 md:py-16 bg-white">
     <div class="container mx-auto px-4">
       <!-- Loading Indicator -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
+      <div v-if="productStore.loading" class="flex justify-center items-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#9810FA]"></div>
         <p class="ml-2 text-gray-600">Carregando produtos...</p>
       </div>
       
       <!-- Error Message -->
-      <div v-else-if="error" class="text-center py-12">
-        <p class="text-red-600">{{ error }}</p>
-        <button @click="fetchProducts" class="mt-4 px-4 py-2 bg-[#9810FA] text-white rounded-md hover:bg-[#7a0dc8]">
+      <div v-else-if="productStore.error" class="text-center py-12">
+        <p class="text-red-600">{{ productStore.error }}</p>
+        <button @click="productStore.fetchProducts" class="mt-4 px-4 py-2 bg-[#9810FA] text-white rounded-md hover:bg-[#7a0dc8]">
           Tentar novamente
         </button>
       </div>
@@ -55,9 +55,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useCartStore } from '@/stores/cartStore'
-import { productService, type Product } from '@/services/api'
+import { useProductStore } from '@/stores/productStore'
+import type { Product } from '@/services/api'
 
 // Props para filtros
 const props = defineProps({
@@ -72,9 +73,7 @@ const props = defineProps({
 })
 
 const cartStore = useCartStore()
-const products = ref<Product[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const productStore = useProductStore()
 
 // Função para obter o nome da categoria, seja de um objeto ou string
 const getCategoryName = (category: any): string => {
@@ -86,7 +85,7 @@ const getCategoryName = (category: any): string => {
 
 // Produtos filtrados com base nas props
 const filteredProducts = computed(() => {
-  let result = [...products.value];
+  let result = [...productStore.products];
   
   // Filtrar por termo de busca
   if (props.searchTerm) {
@@ -108,22 +107,6 @@ const filteredProducts = computed(() => {
   return result;
 });
 
-// Buscar produtos da API
-const fetchProducts = async () => {
-  try {
-    loading.value = true
-    error.value = null
-    // Buscar apenas produtos ativos
-    const data = await productService.getAll()
-    products.value = data.filter(product => product.active)
-  } catch (err) {
-    console.error('Erro ao buscar produtos:', err)
-    error.value = 'Não foi possível carregar os produtos. Tente novamente.'
-  } finally {
-    loading.value = false
-  }
-}
-
 // Formatar preço para exibição
 const formatPrice = (price: number): string => {
   return price.toLocaleString('pt-BR', {
@@ -140,14 +123,6 @@ const adicionarAoCarrinho = (product: Product) => {
     image: product.image_url || '/images/product-placeholder.jpg'
   })
 }
-
-// Observar mudanças nos filtros para atualizar produtos
-watch(() => [props.searchTerm, props.category], () => {
-  // Se precisar fazer alguma ação quando os filtros mudarem
-  // Por exemplo, resetar paginação, etc.
-}, { deep: true })
-
-onMounted(fetchProducts)
 </script>
 
 <style scoped>

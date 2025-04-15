@@ -1,7 +1,7 @@
 <template>
   <section class="relative hero flex items-center justify-center overflow-hidden">
     <div class="container px-4 py-20 md:py-56 relative z-10 text-center">
-      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-4 md:mb-6">YASMIM SOL</h1>
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 md:mb-6">LOJA VIRTUAL</h1>
       <h2 class="text-xl sm:text-2xl md:text-3xl mb-6 md:mb-8">NOVIDADES NA LOJA!</h2>
       <router-link 
         to="/comprar" 

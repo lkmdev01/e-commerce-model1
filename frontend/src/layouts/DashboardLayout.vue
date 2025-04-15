@@ -3,7 +3,7 @@
     <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 w-64 bg-[#9810FA] text-white transform transition-transform duration-300 ease-in-out z-30" :class="{ '-translate-x-full': !sidebarOpen }">
       <div class="flex items-center justify-between h-16 px-4 border-b border-white/10">
-        <router-link to="/dashboard" class="text-xl font-bold">YASMIM SOL</router-link>
+        <router-link to="/dashboard" class="text-xl font-bold">LOJA VIRTUAL</router-link>
         <button @click="toggleSidebar" class="md:hidden">
           <i class="fas fa-times"></i>
         </button>

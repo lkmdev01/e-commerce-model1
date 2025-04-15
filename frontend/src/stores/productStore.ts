@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
-import { productService } from '@/services/productService';
-import type { Product } from '@/services/productService';
+import { productService, type Product } from '@/services/api';
 
 interface ProductState {
   products: Product[];

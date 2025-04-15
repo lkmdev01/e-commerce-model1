@@ -2,7 +2,7 @@
   <header class="w-full absolute bg-transparent top-0 z-50">
     <nav class="container px-4 py-4 gap-4 flex justify-between items-center">
       <router-link to="/" class="text-2xl font-bold text-gray-800">
-        YASMIM SOL
+        LOJA VIRTUAL
       </router-link>
       
       <!-- Menu Mobile -->

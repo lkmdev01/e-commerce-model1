@@ -95,6 +95,11 @@ export const productService = {
     return response.data;
   },
 
+  async getBySlug(slug: string): Promise<Product> {
+    const response = await api.get<Product>(`/products/slug/${slug}`);
+    return response.data;
+  },
+
   async create(productData: FormData): Promise<Product> {
     const response = await api.post<Product>('/products', productData);
     return response.data;
@@ -153,6 +158,68 @@ export const categoryService = {
 
   async delete(id: number): Promise<void> {
     await api.delete(`/categories/${id}`);
+  },
+};
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: boolean;
+  email_verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+  password?: string; // Opcional, usado apenas para criação/atualização
+}
+
+export const userService = {
+  async getAll(): Promise<User[]> {
+    const response = await api.get<PaginatedResponse<User> | User[]>('/users');
+    // Handle both paginated and non-paginated responses
+    if ('data' in response.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    }
+    return response.data as User[];
+  },
+
+  async getById(id: number): Promise<User> {
+    const response = await api.get<User>(`/users/${id}`);
+    return response.data;
+  },
+
+  async create(userData: Partial<User>): Promise<User> {
+    // Explicitamente criar um objeto com apenas os campos que queremos
+    const payload = {
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      role: userData.role || 'user',
+      status: userData.status
+    };
+
+    console.log('API - Enviando payload:', payload);
+    const response = await api.post<User>('/users', payload);
+    return response.data;
+  },
+
+  async update(id: number, userData: Partial<User>): Promise<User> {
+    // Explicitamente criar um objeto com apenas os campos que queremos
+    const payload: Record<string, any> = {};
+
+    if (userData.name !== undefined) payload.name = userData.name;
+    if (userData.email !== undefined) payload.email = userData.email;
+    if (userData.password !== undefined) payload.password = userData.password;
+    if (userData.role !== undefined) payload.role = userData.role;
+    if (userData.status !== undefined) payload.status = userData.status;
+
+    console.log('API - Enviando payload de atualização:', payload);
+    const response = await api.put<User>(`/users/${id}`, payload);
+    return response.data;
+  },
+
+  async delete(id: number): Promise<void> {
+    await api.delete(`/users/${id}`);
   },
 };
 

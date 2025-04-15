@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             CategorySeeder::class,
+            AdminUserSeeder::class,
             // ProductSeeder::class, // Descomente caso queira popular produtos
         ]);
     }
