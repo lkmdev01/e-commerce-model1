@@ -129,4 +129,77 @@ class UserController extends Controller
         $user->delete();
         return response()->json(null, 204);
     }
+
+    /**
+     * Atualizar as configurações do usuário autenticado
+     */
+    public function updateSettings(Request $request)
+    {
+        $user = $request->user();
+        
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'newsletter' => 'sometimes|boolean',
+            'preferences' => 'sometimes|array',
+            'current_password' => 'sometimes|string',
+            'new_password' => 'sometimes|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Dados inválidos',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Atualizar nome
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+
+        // Atualizar preferência de newsletter
+        if ($request->has('newsletter')) {
+            $user->newsletter = $request->newsletter;
+        }
+
+        // Atualizar preferências gerais
+        if ($request->has('preferences')) {
+            $user->preferences = $request->preferences;
+        }
+
+        // Alterar senha
+        if ($request->has('current_password') && $request->has('new_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'message' => 'Senha atual incorreta',
+                    'errors' => ['current_password' => ['A senha atual está incorreta.']]
+                ], 422);
+            }
+
+            $user->password = Hash::make($request->new_password);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Configurações atualizadas com sucesso',
+            'user' => $user
+        ]);
+    }
+
+    /**
+     * Obter as configurações do usuário autenticado
+     */
+    public function getSettings(Request $request)
+    {
+        $user = $request->user();
+        
+        return response()->json([
+            'name' => $user->name,
+            'email' => $user->email,
+            'newsletter' => $user->newsletter,
+            'preferences' => $user->preferences,
+            'last_login_at' => $user->last_login_at,
+        ]);
+    }
 } 

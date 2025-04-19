@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -10,26 +11,70 @@ const api = axios.create({
   },
 });
 
+// Lista de endpoints que não requerem autenticação
+const publicEndpoints = [
+  '/products/id',
+  '/products/slug',
+  '/products$', // Apenas GET /products é público
+  '/categories$', // Apenas GET /categories é público
+  '/categories/slug',
+  '/auth/login',
+  '/contact',
+  '/sanctum/csrf-cookie'
+];
+
 // Interceptor para adicionar o token de autenticação
 api.interceptors.request.use(async (config) => {
-  // Obter CSRF token se necessário
-  if (!document.cookie.includes('XSRF-TOKEN')) {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
-      withCredentials: true
+  try {
+    // Obter CSRF token se necessário
+    if (!document.cookie.includes('XSRF-TOKEN')) {
+      console.log('Obtendo CSRF token...');
+      try {
+        await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
+          withCredentials: true
+        });
+        console.log('CSRF token obtido com sucesso!');
+      } catch (err) {
+        console.error('Erro ao obter CSRF token:', err);
+      }
+    }
+
+    // Se estamos enviando FormData, não devemos definir o Content-Type
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
+    // Adicionar token para todas as requisições exceto as públicas
+    const isPublicEndpoint = publicEndpoints.some(endpoint => {
+      const regex = new RegExp(endpoint);
+      return regex.test(config.url || '');
     });
-  }
 
-  // Se estamos enviando FormData, não devemos definir o Content-Type
-  // O axios vai automaticamente definir como 'multipart/form-data' e incluir o boundary
-  if (config.data instanceof FormData) {
-    delete config.headers['Content-Type'];
-  }
+    // Adicionar token apenas se não for um endpoint público
+    if (!isPublicEndpoint) {
+      let token = localStorage.getItem('token');
 
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+      if (!token) {
+        console.warn('Tentativa de acessar rota protegida sem token:', config.url);
+      } else {
+        // Garantir que o token esteja no formato correto
+        if (!token.startsWith('Bearer ') && !token.startsWith('bearer ')) {
+          token = `Bearer ${token}`;
+          localStorage.setItem('token', token);
+        }
+
+        config.headers.Authorization = token;
+
+        // Log para diagnóstico
+        console.log(`Enviando requisição para ${config.url} com token: ${token.substring(0, 15)}...`);
+      }
+    }
+
+    return config;
+  } catch (error) {
+    console.error('Erro no interceptor de requisições:', error);
+    return config;
   }
-  return config;
 });
 
 // Interceptor para tratar erros
@@ -37,10 +82,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     console.error('API Error:', error);
-    if (error.response?.status === 401) {
-      // Redirecionar para login
-      window.location.href = '/login';
+
+    // Se recebermos um erro 401 (Não autorizado)
+    if (error.response && error.response.status === 401) {
+      // Limpar o token e redirecionar para o login
+      localStorage.removeItem('token');
+
+      // Se não estamos já na página de login, redirecionar
+      if (window.location.pathname !== '/login') {
+        console.warn('Token expirado ou inválido. Redirecionando para login...');
+        window.location.href = '/login';
+      }
     }
+
     return Promise.reject(error);
   }
 );
@@ -101,8 +155,38 @@ export const productService = {
   },
 
   async create(productData: FormData): Promise<Product> {
-    const response = await api.post<Product>('/products', productData);
-    return response.data;
+    // Uso direto do axios em vez do api com interceptores
+    const token = localStorage.getItem('token');
+
+    // Log extensivo para diagnóstico
+    console.log('Token para criar produto:', token ? token.substring(0, 15) + '...' : 'nenhum');
+    console.log('URL da requisição:', 'http://localhost:8000/api/products');
+    console.log('Dados enviados:', Object.fromEntries(productData.entries()));
+
+    try {
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:8000/api/products',
+        data: productData,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token || '',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        withCredentials: true
+      });
+
+      console.log('Resposta da criação do produto:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Erro detalhado na criação do produto:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        headers: error.response?.headers,
+        data: error.response?.data
+      });
+      throw error;
+    }
   },
 
   async update(id: number, productData: FormData): Promise<Product> {
@@ -226,6 +310,87 @@ export const userService = {
 export const testService = {
   async test(): Promise<{ message: string; timestamp: string }> {
     const response = await api.get('/test');
+    return response.data;
+  }
+};
+
+export interface ContactForm {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export const contactService = {
+  async send(data: ContactForm): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/contact', data);
+    return response.data;
+  }
+};
+
+export interface Address {
+  id?: number;
+  name: string;
+  street: string;
+  number: string;
+  complement?: string;
+  district: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  is_default?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserSettings {
+  name: string;
+  email: string;
+  newsletter: boolean;
+  preferences?: any;
+  last_login_at?: string;
+}
+
+export interface PasswordChange {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+}
+
+export const addressService = {
+  async getAll(): Promise<Address[]> {
+    const response = await api.get<Address[]>('/addresses');
+    return response.data;
+  },
+
+  async create(address: Address): Promise<Address> {
+    const response = await api.post<Address>('/addresses', address);
+    return response.data;
+  },
+
+  async update(id: number, address: Partial<Address>): Promise<Address> {
+    const response = await api.put<Address>(`/addresses/${id}`, address);
+    return response.data;
+  },
+
+  async delete(id: number): Promise<void> {
+    await api.delete(`/addresses/${id}`);
+  }
+};
+
+export const userSettingsService = {
+  async get(): Promise<UserSettings> {
+    const response = await api.get<UserSettings>('/user/settings');
+    return response.data;
+  },
+
+  async update(settings: Partial<UserSettings>): Promise<UserSettings> {
+    const response = await api.put<UserSettings>('/user/settings', settings);
+    return response.data;
+  },
+
+  async changePassword(passwordData: PasswordChange): Promise<{ message: string }> {
+    const response = await api.put<{ message: string }>('/user/settings', passwordData);
     return response.data;
   }
 };

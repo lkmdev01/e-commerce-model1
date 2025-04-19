@@ -2,8 +2,11 @@
   <div class="space-y-6">
     <!-- Cabeçalho -->
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900">Pedidos</h1>
+      <h1 class="text-2xl font-bold text-gray-900">
+        {{ isAdmin ? 'Gerenciar Pedidos' : 'Meus Pedidos' }}
+      </h1>
       <button 
+        v-if="isAdmin"
         @click="exportOrders"
         class="px-4 py-2 bg-[#9810FA] text-white rounded-lg hover:bg-[#7a0dc8] transition-colors"
       >
@@ -20,7 +23,7 @@
           <input 
             type="text" 
             v-model="filters.search"
-            placeholder="ID ou Cliente"
+            :placeholder="isAdmin ? 'ID, Cliente ou Email' : 'ID ou Produto'"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9810FA] focus:border-transparent"
           >
         </div>
@@ -66,7 +69,7 @@
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+            <th v-if="isAdmin" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -76,7 +79,7 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="order in orders" :key="order.id">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{{ order.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td v-if="isAdmin" class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm font-medium text-gray-900">{{ order.customer.name }}</div>
               <div class="text-sm text-gray-500">{{ order.customer.email }}</div>
             </td>
@@ -108,6 +111,7 @@
                 <i class="fas fa-eye"></i>
               </button>
               <button 
+                v-if="isAdmin"
                 @click="updateOrderStatus(order)"
                 class="text-[#9810FA] hover:text-[#7a0dc8]"
               >
@@ -214,8 +218,8 @@
       </div>
     </div>
 
-    <!-- Modal de Atualização de Status -->
-    <div v-if="orderToUpdate" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <!-- Modal de Atualização de Status (apenas para admin) -->
+    <div v-if="orderToUpdate && isAdmin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div class="bg-white rounded-lg p-6 max-w-md w-full">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold text-gray-900">Atualizar Status do Pedido #{{ orderToUpdate.id }}</h2>
@@ -260,7 +264,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useApi } from '@/composables/useApi';
 
 interface Customer {
   name: string;
@@ -287,6 +293,13 @@ interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 }
 
+// Obter o store de autenticação
+const authStore = useAuthStore();
+const api = useApi();
+
+// Verificar se o usuário é admin
+const isAdmin = computed(() => authStore.isAdmin);
+
 // Estado
 const filters = ref({
   search: '',
@@ -303,43 +316,144 @@ const pagination = ref({
   end: 10
 });
 
-const orders = ref<Order[]>([
-  {
-    id: 1,
-    customer: {
-      name: 'João Silva',
-      email: 'joao@email.com',
-      phone: '(11) 99999-9999',
-      address: 'Rua Exemplo, 123 - São Paulo, SP'
-    },
-    date: '2024-03-20',
-    items: [
-      {
-        id: 1,
-        name: 'Produto 1',
-        quantity: 2,
-        price: 99.90
-      },
-      {
-        id: 2,
-        name: 'Produto 2',
-        quantity: 1,
-        price: 149.90
-      }
-    ],
-    subtotal: 349.70,
-    shipping: 15.00,
-    total: 364.70,
-    status: 'pending'
-  }
-]);
-
+const orders = ref<Order[]>([]);
+const loading = ref(false);
 const selectedOrder = ref<Order | null>(null);
 const orderToUpdate = ref<Order | null>(null);
 const newStatus = ref<Order['status']>('pending');
 
 // Computed
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage));
+
+// Carregar pedidos com base no perfil do usuário
+const loadOrders = async () => {
+  loading.value = true;
+  try {
+    // Em uma implementação real, você usaria diferentes endpoints ou parâmetros
+    // No exemplo, simulamos dados diferentes para admin e usuário normal
+    
+    if (isAdmin.value) {
+      // Admin vê todos os pedidos
+      orders.value = [
+        {
+          id: 1001,
+          customer: {
+            name: 'Maria Silva',
+            email: 'maria@email.com',
+            phone: '(11) 99999-8888',
+            address: 'Rua das Flores, 123 - São Paulo, SP'
+          },
+          date: '2024-04-15',
+          items: [
+            {
+              id: 1,
+              name: 'Produto Premium',
+              quantity: 1,
+              price: 299.90
+            }
+          ],
+          subtotal: 299.90,
+          shipping: 0,
+          total: 299.90,
+          status: 'processing'
+        },
+        {
+          id: 1002,
+          customer: {
+            name: 'João Silva',
+            email: 'joao@email.com',
+            phone: '(11) 99999-9999',
+            address: 'Rua Exemplo, 123 - São Paulo, SP'
+          },
+          date: '2024-04-10',
+          items: [
+            {
+              id: 1,
+              name: 'Produto 1',
+              quantity: 2,
+              price: 99.90
+            },
+            {
+              id: 2,
+              name: 'Produto 2',
+              quantity: 1,
+              price: 149.90
+            }
+          ],
+          subtotal: 349.70,
+          shipping: 15.00,
+          total: 364.70,
+          status: 'pending'
+        },
+        {
+          id: 1003,
+          customer: {
+            name: 'Pedro Oliveira',
+            email: 'pedro@email.com',
+            phone: '(11) 99999-7777',
+            address: 'Av. Principal, 500 - São Paulo, SP'
+          },
+          date: '2024-04-01',
+          items: [
+            {
+              id: 3,
+              name: 'Produto 3',
+              quantity: 1,
+              price: 199.90
+            }
+          ],
+          subtotal: 199.90,
+          shipping: 15.00,
+          total: 214.90,
+          status: 'delivered'
+        }
+      ];
+    } else {
+      // Usuário comum vê apenas seus próprios pedidos
+      const userName = authStore.user?.name || 'Usuário';
+      const userEmail = authStore.user?.email || 'usuario@email.com';
+      
+      orders.value = [
+        {
+          id: 1002,
+          customer: {
+            name: userName,
+            email: userEmail,
+            phone: '(11) 99999-9999',
+            address: 'Rua Exemplo, 123 - São Paulo, SP'
+          },
+          date: '2024-04-10',
+          items: [
+            {
+              id: 1,
+              name: 'Produto 1',
+              quantity: 2,
+              price: 99.90
+            },
+            {
+              id: 2,
+              name: 'Produto 2',
+              quantity: 1,
+              price: 149.90
+            }
+          ],
+          subtotal: 349.70,
+          shipping: 15.00,
+          total: 364.70,
+          status: 'pending'
+        }
+      ];
+    }
+    
+    // Atualizar informações de paginação
+    pagination.value.total = orders.value.length;
+    pagination.value.end = Math.min(pagination.value.start + pagination.value.perPage - 1, pagination.value.total);
+  } catch (error) {
+    console.error('Erro ao carregar pedidos:', error);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // Métodos
 const getStatusText = (status: Order['status']) => {
@@ -358,18 +472,27 @@ const viewOrder = (order: Order) => {
 };
 
 const updateOrderStatus = (order: Order) => {
+  // Apenas admins podem atualizar status
+  if (!isAdmin.value) return;
+  
   orderToUpdate.value = order;
   newStatus.value = order.status;
 };
 
 const saveOrderStatus = () => {
-  if (orderToUpdate.value) {
+  if (orderToUpdate.value && isAdmin.value) {
     orderToUpdate.value.status = newStatus.value;
     orderToUpdate.value = null;
+    
+    // Aqui você implementaria a chamada API para salvar o status
+    // api.put(`/orders/${orderToUpdate.value.id}/status`, { status: newStatus.value });
   }
 };
 
 const exportOrders = () => {
+  // Apenas admin pode exportar
+  if (!isAdmin.value) return;
+  
   // Aqui você implementaria a lógica para exportar os pedidos
   console.log('Exportando pedidos...');
 };
@@ -377,12 +500,19 @@ const exportOrders = () => {
 const previousPage = () => {
   if (pagination.value.currentPage > 1) {
     pagination.value.currentPage--;
+    // Em uma implementação real, você recarregaria os pedidos com a nova página
   }
 };
 
 const nextPage = () => {
   if (pagination.value.currentPage < totalPages.value) {
     pagination.value.currentPage++;
+    // Em uma implementação real, você recarregaria os pedidos com a nova página
   }
 };
+
+// Carregar pedidos ao montar o componente
+onMounted(() => {
+  loadOrders();
+});
 </script> 

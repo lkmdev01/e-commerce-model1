@@ -27,7 +27,7 @@
 
         <!-- Copyright -->
         <div class="text-gray-600 text-sm md:text-base text-center md:text-left">
-          Copyright © 2024 Yasmim Sol
+          Copyright © 2024 Loja Virtual
         </div>
       </div>
     </div>

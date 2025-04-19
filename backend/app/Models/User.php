@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -24,6 +25,9 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
+        'newsletter',
+        'preferences',
+        'last_login_at',
     ];
 
     /**
@@ -47,6 +51,25 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'boolean',
+            'newsletter' => 'boolean',
+            'preferences' => 'json',
+            'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Obtém todos os endereços do usuário.
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
+     * Obtém o endereço padrão do usuário.
+     */
+    public function defaultAddress()
+    {
+        return $this->addresses()->where('is_default', true)->first();
     }
 }

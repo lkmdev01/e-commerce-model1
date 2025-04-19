@@ -26,7 +26,7 @@ class ProductController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'required|integer|min:0',
             'active' => 'boolean',
-            'featured' => 'boolean',
+            'featured' => 'boolean', // Campo para marcar produtos em destaque
         ]);
 
         $imagePath = $request->file('image')->store('products', 'public');

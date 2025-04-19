@@ -5,14 +5,10 @@
 
     <!-- Produtos em Destaque -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-extrabold text-gray-900">Produtos em Destaque</h2>
-        <p class="mt-4 text-lg text-gray-500">Confira nossa seleção especial de produtos</p>
-      </div>
-
       <ProductGrid 
         :search-term="searchTerm"
         :category="selectedCategory"
+        :show-featured-only="true"
         @product-selected="handleProductSelect"
       />
     </section>

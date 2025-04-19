@@ -50,9 +50,12 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        <button class="text-gray-800 hover:text-purple-600">
-          <i class="fas fa-search text-xl"></i>
-        </button>
+        <a 
+          @click="handleUserClick" 
+          class="text-gray-800 hover:text-purple-600 cursor-pointer"
+        >
+          <i class="fas fa-user text-xl"></i>
+        </a>
         <router-link to="/carrinho" class="text-gray-800 hover:text-purple-600 relative">
           <i class="fas fa-shopping-cart text-xl"></i>
           <span 
@@ -75,11 +78,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 const isMenuOpen = ref(false)
+const isAuthenticated = ref(false)
+
+// Inicializar o estado de autenticação
+onMounted(async () => {
+  isAuthenticated.value = await authStore.checkAuth()
+})
+
+const handleUserClick = () => {
+  if (isAuthenticated.value) {
+    router.push('/dashboard')
+  } else {
+    router.push('/login')
+  }
+}
 
 const menuItems = [
   { name: 'LAR', path: '/' },

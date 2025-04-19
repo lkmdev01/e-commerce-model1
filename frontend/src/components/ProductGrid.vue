@@ -23,6 +23,11 @@
       <!-- Products Grid -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
         <div v-for="product in filteredProducts" :key="product.id" class="group relative">
+          <!-- Badge de Destaque -->
+          <div v-if="product.featured" class="absolute top-0 left-0 z-10 bg-[#9810FA] text-white px-3 py-1 text-sm font-medium">
+            Destaque
+          </div>
+
           <!-- Link para a página de detalhes -->
           <router-link :to="{ name: 'produto-detalhe', params: { id: product.id }}">
             <div class="relative overflow-hidden mb-4">
@@ -55,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cartStore'
 import { useProductStore } from '@/stores/productStore'
 import type { Product } from '@/services/api'
@@ -69,11 +74,22 @@ const props = defineProps({
   category: {
     type: String,
     default: ''
+  },
+  showFeaturedOnly: {
+    type: Boolean,
+    default: false
   }
 })
 
 const cartStore = useCartStore()
 const productStore = useProductStore()
+
+// Garantir que os produtos sejam carregados quando o componente for montado
+onMounted(async () => {
+  if (productStore.products.length === 0 && !productStore.loading) {
+    await productStore.fetchProducts()
+  }
+})
 
 // Função para obter o nome da categoria, seja de um objeto ou string
 const getCategoryName = (category: any): string => {
@@ -86,6 +102,11 @@ const getCategoryName = (category: any): string => {
 // Produtos filtrados com base nas props
 const filteredProducts = computed(() => {
   let result = [...productStore.products];
+  
+  // Filtrar produtos em destaque se necessário
+  if (props.showFeaturedOnly) {
+    result = result.filter(product => product.featured);
+  }
   
   // Filtrar por termo de busca
   if (props.searchTerm) {

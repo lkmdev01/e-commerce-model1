@@ -13,20 +13,20 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criar usuário administrador
-        User::create([
-            'name' => 'Administrador',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        // Criar usuário normal se não existir
+        if (!User::where('email', 'user@ecommercesol.com')->exists()) {
+            User::create([
+                'name' => 'Usuário Normal',
+                'email' => 'user@ecommercesol.com',
+                'password' => Hash::make('user123'),
+                'role' => 'user',
+                'status' => true,
+                'email_verified_at' => now(),
+            ]);
 
-        // Criar alguns usuários de teste
-        User::create([
-            'name' => 'Usuário Teste',
-            'email' => 'user@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+            $this->command->info('Usuário normal criado com sucesso!');
+        } else {
+            $this->command->info('Usuário normal já existe.');
+        }
     }
 } 

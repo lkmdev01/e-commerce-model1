@@ -105,8 +105,18 @@ const form = ref({
 const handleLogin = async () => {
   try {
     loading.value = true;
+    
+    // Login feito com sucesso
     await authStore.login(form.value);
-    router.push('/dashboard');
+    
+    // Verificar o papel do usuário para redirecionar corretamente
+    if (authStore.user?.role === 'admin') {
+      // Administrador vai para o dashboard principal
+      router.push('/dashboard');
+    } else {
+      // Usuário normal vai para o perfil
+      router.push('/dashboard/profile');
+    }
   } catch (error) {
     console.error('Erro ao fazer login:', error);
   } finally {

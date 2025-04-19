@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CategorySeeder::class,
             AdminUserSeeder::class,
-            // ProductSeeder::class, // Descomente caso queira popular produtos
+            ProductSeeder::class, // Habilitando o seeder de produtos
         ]);
     }
 }

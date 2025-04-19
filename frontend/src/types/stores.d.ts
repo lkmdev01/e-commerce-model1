@@ -18,6 +18,8 @@ declare module '@/stores/auth' {
     user: User | null;
     token: string | null;
     loading: boolean;
+    isAuthenticated: boolean;
+    isAdmin: boolean;
     login: (credentials: LoginCredentials) => Promise<any>;
     logout: () => void;
     checkAuth: () => Promise<boolean>;

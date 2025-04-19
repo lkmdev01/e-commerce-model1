@@ -100,6 +100,7 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estoque</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destaque</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
             </tr>
           </thead>
@@ -137,6 +138,18 @@
                   ]"
                 >
                   {{ product.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span 
+                  :class="[
+                    'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                    product.featured 
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  ]"
+                >
+                  {{ product.featured ? 'Sim' : 'Não' }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -278,6 +291,18 @@
               </select>
             </div>
             
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Destaque</label>
+              <select 
+                v-model="productForm.featured"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9810FA] focus:border-transparent"
+                required
+              >
+                <option :value="true">Sim</option>
+                <option :value="false">Não</option>
+              </select>
+            </div>
+            
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
               <textarea 
@@ -359,6 +384,7 @@ interface ProductForm {
   active: boolean;
   image: File | null;
   image_preview?: string;
+  featured: boolean;
 }
 
 // Estado
@@ -389,7 +415,8 @@ const productForm = ref<ProductForm>({
   category_id: '',
   active: true,
   image: null,
-  image_preview: undefined
+  image_preview: undefined,
+  featured: false
 });
 
 // Dados dos produtos e categorias
@@ -549,7 +576,8 @@ const openNewProductModal = () => {
     category_id: '',
     active: true,
     image: null,
-    image_preview: undefined
+    image_preview: undefined,
+    featured: false
   };
   showProductModal.value = true;
 };
@@ -573,7 +601,22 @@ const saveProduct = async () => {
     loading.value = true;
     error.value = null;
     
-    // Criar objeto FormData para envio multipart/form-data
+    // Diagnóstico de autenticação aprimorado
+    const token = localStorage.getItem('token');
+    if (!token) {
+      error.value = 'Você não está autenticado. Faça login novamente.';
+      return;
+    }
+    
+    console.log('Token encontrado:', token.substring(0, 15) + '...');
+    
+    // Verificar se o token está no formato correto
+    if (!token.startsWith('Bearer ') && !token.startsWith('bearer ')) {
+      // Adicionar 'Bearer ' ao token se não estiver presente
+      localStorage.setItem('token', `Bearer ${token}`);
+      console.log('Token corrigido para formato Bearer');
+    }
+    
     const formData = new FormData();
     formData.append('name', productForm.value.name);
     formData.append('description', productForm.value.description);
@@ -581,6 +624,7 @@ const saveProduct = async () => {
     formData.append('stock', productForm.value.stock.toString());
     formData.append('category_id', productForm.value.category_id.toString());
     formData.append('active', productForm.value.active === true ? '1' : '0');
+    formData.append('featured', productForm.value.featured === true ? '1' : '0');
     
     if (productForm.value.image) {
       formData.append('image', productForm.value.image);
@@ -599,7 +643,21 @@ const saveProduct = async () => {
     closeProductModal();
   } catch (err: any) {
     console.error('Erro ao salvar produto:', err);
-    error.value = err.response?.data?.message || 'Erro ao salvar produto. Tente novamente.';
+    
+    // Mensagem de erro mais detalhada
+    if (err.response?.status === 401) {
+      error.value = 'Sessão expirada. Por favor, faça login novamente.';
+      // Não redirecionar automaticamente
+      setTimeout(() => {
+        // Limpar token e redirecionar manualmente após 2 segundos
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }, 2000);
+    } else if (err.response?.data?.message) {
+      error.value = err.response.data.message;
+    } else {
+      error.value = 'Erro ao salvar produto. Tente novamente.';
+    }
   } finally {
     loading.value = false;
   }
@@ -615,7 +673,8 @@ const editProduct = (product: Product) => {
     category_id: product.category_id ?? '',
     active: Boolean(product.active),
     image: null,
-    image_preview: product.image_url || undefined
+    image_preview: product.image_url || undefined,
+    featured: Boolean(product.featured)
   };
   showProductModal.value = true;
 };

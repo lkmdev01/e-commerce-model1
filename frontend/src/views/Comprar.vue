@@ -17,38 +17,6 @@
     
     <section class="products-section">
       <div class="container mx-auto px-4 py-16">
-        
-        <!-- Produtos em Destaque (caso tenha) -->
-        <div v-if="featuredProducts.length > 0" class="mb-16">
-          <h2 class="text-2xl font-bold text-center mb-8">Produtos em Destaque</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
-            <div v-for="product in featuredProducts" :key="product.id" class="group relative">
-              <router-link :to="{ name: 'produto-detalhe', params: { id: product.id }}">
-                <div class="relative overflow-hidden mb-4">
-                  <img 
-                    :src="product.image_url || '/images/product-placeholder.jpg'" 
-                    :alt="product.name"
-                    class="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
-                  >
-                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-                  <div class="absolute top-2 right-2 bg-[#9810FA] text-white px-2 py-1 text-xs font-medium rounded">
-                    Destaque
-                  </div>
-                </div>
-                <div class="text-center px-2">
-                  <h3 class="text-base font-semibold text-gray-800">{{ product.name }}</h3>
-                  <p class="text-sm text-gray-600">{{ getCategoryName(product.category) }}</p>
-                  <p class="text-base font-bold text-gray-900 mt-2">
-                    R$ {{ product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
-                  </p>
-                </div>
-              </router-link>
-            </div>
-          </div>
-        </div>
-
-        <h2 class="text-2xl font-bold text-center mb-8">Todos os Produtos</h2>
-        
         <div class="filters mb-12">
           <div class="search mb-8">
             <input 
@@ -104,9 +72,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import ProductGrid from '../components/ProductGrid.vue'
-import { categoryService, productService, type Product } from '@/services/api'
+import { productService, type Product } from '@/services/api'
+import { useProductStore } from '@/stores/productStore'
 
 const searchTerm = ref('')
 const selectedCategory = ref('Todos')
@@ -114,13 +83,7 @@ const categories = ref<string[]>(['Todos'])
 const loading = ref(false)
 const allProducts = ref<Product[]>([])
 const categoryCounts = ref<Record<string, number>>({})
-
-// Produtos em destaque
-const featuredProducts = computed(() => {
-  return allProducts.value
-    .filter(product => product.featured && product.active)
-    .slice(0, 3); // Exibir no máximo 3 produtos em destaque
-});
+const productStore = useProductStore()
 
 // Função para obter o nome da categoria, seja de um objeto ou string
 const getCategoryName = (category: any): string => {
@@ -133,7 +96,16 @@ const getCategoryName = (category: any): string => {
 // Carregar produtos e calcular contagem por categoria
 const fetchProducts = async () => {
   try {
-    const products = await productService.getAll();
+    // Usar produtos do productStore se já estiverem carregados
+    const products = productStore.products.length > 0 
+                    ? productStore.products 
+                    : await productService.getAll();
+    
+    // Se usamos a API diretamente, atualize também o store
+    if (productStore.products.length === 0) {
+      productStore.products = products;
+    }
+    
     allProducts.value = products.filter(p => p.active);
     
     // Calcular contagem por categoria
@@ -162,11 +134,9 @@ const fetchProducts = async () => {
     uniqueCategories.sort((a, b) => a.localeCompare(b));
     categories.value = ['Todos', ...uniqueCategories];
     
-    // Gerar produtos em destaque simulados se não houver produtos reais
     if (allProducts.value.length === 0) {
       // Se não tiver produtos, não exibe categorias
       categories.value = ['Todos'];
-      allProducts.value = [];
     }
   } catch (err) {
     console.error('Erro ao buscar produtos:', err);
@@ -176,12 +146,17 @@ const fetchProducts = async () => {
   }
 };
 
-// Carregar categorias do backend (não usado mais, agora extraímos direto dos produtos)
+// Carregar categorias do backend
 const fetchCategories = async () => {
   try {
     loading.value = true;
     
-    // Carregar produtos para obter categorias
+    // Verificar se o productStore já tem produtos
+    if (productStore.products.length === 0) {
+      // Carregar produtos via store primeiro
+      await productStore.fetchProducts();
+    }
+    
     await fetchProducts();
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
