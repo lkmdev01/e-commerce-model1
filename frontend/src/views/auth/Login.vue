@@ -52,10 +52,14 @@
           </div>
 
           <div class="text-sm">
-            <a href="#" class="font-medium text-primary hover:text-primary-dark">
+            <router-link to="/forgot-password" class="font-medium text-purple-600 hover:text-purple-700">
               Esqueceu sua senha?
-            </a>
+            </router-link>
           </div>
+        </div>
+
+        <div v-if="error" class="text-red-600 text-sm">
+          {{ error }}
         </div>
 
         <div>
@@ -96,6 +100,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const loading = ref(false);
+const error = ref('');
 const form = ref({
   email: '',
   password: '',
@@ -104,7 +109,13 @@ const form = ref({
 
 const handleLogin = async () => {
   try {
+    error.value = '';
     loading.value = true;
+    
+    console.log('Tentando login com:', {
+      email: form.value.email,
+      remember: form.value.remember
+    });
     
     // Login feito com sucesso
     await authStore.login(form.value);
@@ -117,8 +128,16 @@ const handleLogin = async () => {
       // Usuário normal vai para o perfil
       router.push('/dashboard/profile');
     }
-  } catch (error) {
-    console.error('Erro ao fazer login:', error);
+  } catch (e: any) {
+    console.error('Erro ao fazer login:', e);
+    if (e.response && e.response.data && e.response.data.message) {
+      error.value = e.response.data.message;
+    } else if (e.response && e.response.data && e.response.data.errors) {
+      const errorMessages = Object.values(e.response.data.errors).flat();
+      error.value = errorMessages.join(' ');
+    } else {
+      error.value = 'Não foi possível fazer login. Verifique suas credenciais.';
+    }
   } finally {
     loading.value = false;
   }

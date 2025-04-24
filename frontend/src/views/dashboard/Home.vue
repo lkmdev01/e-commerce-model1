@@ -3,10 +3,10 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Dashboard</h1>
       <div class="flex gap-4">
-        <button class="bg-purple-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-purple-700">
+        <router-link to="/dashboard/products" class="bg-purple-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-purple-700">
           <i class="fas fa-plus"></i>
           Novo Produto
-        </button>
+        </router-link>
         <button class="text-gray-700 px-4 py-2 rounded-md border border-gray-300 flex items-center gap-2 hover:bg-gray-50">
           <i class="fas fa-download"></i>
           Exportar Relatório
@@ -56,13 +56,13 @@
           <div>
             <h3 class="text-gray-500 text-sm mb-2">Produtos Vendidos</h3>
             <p class="text-2xl font-bold">45</p>
-            <p class="text-sm text-blue-500 flex items-center mt-2">
+            <p class="text-sm text-[#9810FA] flex items-center mt-2">
               <i class="fas fa-arrow-up mr-1"></i>
               8% vs. ontem
             </p>
           </div>
           <div class="bg-blue-100 p-3 rounded-full">
-            <i class="fas fa-box text-blue-500"></i>
+            <i class="fas fa-box text-[#9810FA]"></i>
           </div>
         </div>
       </div>

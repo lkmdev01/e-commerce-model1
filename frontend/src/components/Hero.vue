@@ -1,11 +1,11 @@
 <template>
   <section class="relative hero flex items-center justify-center overflow-hidden">
     <div class="container px-4 py-20 md:py-56 relative z-10 text-center">
-      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-2 md:mb-6">LOJA VIRTUAL</h1>
-      <h2 class="text-xl sm:text-2xl md:text-3xl mb-6 md:mb-8">NOVIDADES NA LOJA!</h2>
+      <h1 class="font-bold mb-5">LOJA VIRTUAL</h1>
+      <h2 class="text-xl sm:text-2xl md:text-3xl mb-6 md:mb-5">NOVIDADES NA LOJA!</h2>
       <router-link 
         to="/comprar" 
-        class="inline-block cta-button rounded-sm transition-colors text-sm sm:text-base px-4 py-2 md:px-6 md:py-3"
+        class="inline-block cta-button rounded-sm transition-colors text-sm sm:text-base px-4 py-2 md:px-6 md:py-3 mt-3"
       >
         COMPRAR AGORA
       </router-link>
@@ -44,7 +44,18 @@
 
 h1 {
   color: #8B008B;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 80px;
+  text-transform: uppercase;
+  line-height: 1em;
+  letter-spacing: 10px;
+}
+
+h2 {
+  color: #050505;
+  font-size: 40px;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 6.3px;
 }
 
 .cta-button {

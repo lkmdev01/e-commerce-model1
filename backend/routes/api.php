@@ -34,6 +34,8 @@ Route::group([], function () {
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{category:slug}', [CategoryController::class, 'show']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/test', function () {
         return response()->json([
             'message' => 'API está funcionando!',
