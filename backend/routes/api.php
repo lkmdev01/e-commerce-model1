@@ -9,6 +9,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\ShippingController;
+use App\Http\Controllers\CartController;
 use App\Http\Middleware\CheckRole;
 
 /*
@@ -34,6 +36,7 @@ Route::group([], function () {
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{category:slug}', [CategoryController::class, 'show']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/test', function () {
@@ -46,6 +49,11 @@ Route::group([], function () {
         return response()->json(['message' => 'Sanctum está funcionando corretamente!']);
     });
     Route::post('/contact', [ContactController::class, 'send']);
+    
+    // Rotas de frete
+    Route::post('/shipping/calculate', [ShippingController::class, 'calculateShipping']);
+    Route::post('/shipping/cep', [ShippingController::class, 'searchCep']);
+    Route::get('/shipping/shop-cep', [ShippingController::class, 'getShopCep']);
 });
 
 // Rotas protegidas que requerem autenticação e role de admin
@@ -78,6 +86,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/addresses', [AddressController::class, 'store']);
     Route::put('/addresses/{id}', [AddressController::class, 'update']);
     Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+    
+    // Rotas para o carrinho do usuário
+    Route::get('/cart/load', [CartController::class, 'load']);
+    Route::post('/cart/save', [CartController::class, 'save']);
     
     // Rota temporária para pedidos (será substituída por um controller adequado no futuro)
     Route::get('/orders', function (Request $request) {

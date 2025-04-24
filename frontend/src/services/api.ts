@@ -20,7 +20,11 @@ const publicEndpoints = [
   '/categories/slug',
   '/auth/login',
   '/contact',
-  '/sanctum/csrf-cookie'
+  '/sanctum/csrf-cookie',
+  // Endpoints de frete - estes precisam ser acessíveis sem autenticação
+  '/shipping/shop-cep',
+  '/shipping/cep',
+  '/shipping/calculate'
 ];
 
 // Interceptor para adicionar o token de autenticação

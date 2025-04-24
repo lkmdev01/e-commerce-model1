@@ -85,6 +85,23 @@
                   <span class="text-gray-600">Pagamento 100% seguro</span>
                 </div>
               </div>
+
+              <!-- Calculadora de Frete -->
+              <div class="pt-6 pb-4">
+                <ShippingCalculator 
+                  :items="[produtoParaCalculo]" 
+                  @shipping-selected="freteSelectionado"
+                />
+                
+                <!-- Exibir frete selecionado -->
+                <div v-if="freteSelecionado" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                  <p class="font-semibold text-green-800">
+                    Frete selecionado: {{ freteSelecionado.service }} - 
+                    R$ {{ formatPrice(freteSelecionado.price) }} - 
+                    {{ freteSelecionado.days }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -94,10 +111,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cartStore'
 import { productService, type Product } from '@/services/api'
+import ShippingCalculator from '@/components/ShippingCalculator.vue'
 
 const route = useRoute()
 const quantidade = ref(1)
@@ -105,6 +123,20 @@ const produto = ref<Product | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const cartStore = useCartStore()
+const freteSelecionado = ref<any>(null)
+
+// Produto formatado para o componente de frete
+const produtoParaCalculo = computed(() => {
+  if (!produto.value) return null
+  
+  return {
+    width: 20, // Largura em cm (exemplo)
+    height: 15, // Altura em cm (exemplo)
+    length: 10, // Comprimento em cm (exemplo)
+    weight: 0.5, // Peso em kg (exemplo)
+    quantity: quantidade.value, // Quantidade selecionada
+  }
+})
 
 // Buscar detalhes do produto da API
 const fetchProduto = async () => {
@@ -141,15 +173,21 @@ const formatPrice = (price: number): string => {
   })
 }
 
+// Adicionar ao Carrinho
 const adicionarAoCarrinho = () => {
-  if (!produto.value) return
-  
-  cartStore.addItem({
-    id: produto.value.id,
-    name: produto.value.name,
-    price: produto.value.price,
-    image: produto.value.image_url || '/images/product-placeholder.jpg'
-  }, quantidade.value)
+  if (produto.value) {
+    cartStore.addItem({
+      id: produto.value.id,
+      name: produto.value.name,
+      price: produto.value.price,
+      image: produto.value.image_url || '/images/product-placeholder.jpg'
+    }, quantidade.value)
+  }
+}
+
+// Quando um frete é selecionado
+const freteSelectionado = (opcao: any) => {
+  freteSelecionado.value = opcao
 }
 
 onMounted(fetchProduto)

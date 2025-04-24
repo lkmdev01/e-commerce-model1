@@ -178,4 +178,43 @@ class AuthController extends Controller
             'message' => 'Senha redefinida com sucesso'
         ]);
     }
+
+    /**
+     * Registrar um novo usuário
+     */
+    public function register(Request $request)
+    {
+        try {
+            Log::info('Tentativa de registro', ['email' => $request->email]);
+
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'user', // Papel padrão
+                'status' => true,  // Ativo por padrão
+            ]);
+
+            Log::info('Registro bem-sucedido', ['email' => $request->email]);
+
+            return response()->json([
+                'message' => 'Usuário registrado com sucesso',
+                'user' => $user
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Erro no registro', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
+        }
+    }
 } 

@@ -3,6 +3,24 @@
     <div class="container mx-auto px-4">
       <h1 class="text-3xl font-bold text-gray-800 mt-10 mb-8">Seu Carrinho</h1>
       
+      <!-- Banner para login quando não estiver autenticado -->
+      <div v-if="cartStore.items.length > 0 && !authStore.isAuthenticated" class="bg-blue-50 p-4 rounded-lg shadow-sm mb-8 border border-blue-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-blue-800 mb-1">Faça login para salvar seu carrinho</h3>
+            <p class="text-blue-600 mb-4 md:mb-0">Seu carrinho será salvo automaticamente e você poderá acessá-lo em qualquer dispositivo.</p>
+          </div>
+          <div class="flex space-x-4">
+            <router-link to="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+              Login
+            </router-link>
+            <router-link to="/register" class="border border-blue-600 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors">
+              Criar Conta
+            </router-link>
+          </div>
+        </div>
+      </div>
+      
       <div v-if="cartStore.items.length > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Lista de Produtos -->
         <div class="lg:col-span-2">
@@ -61,24 +79,55 @@
                 <span class="font-semibold">R$ {{ formatPrice(cartStore.totalAmount) }}</span>
               </div>
               
+              <!-- Calculadora de Frete -->
+              <div class="mt-4 mb-4">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">Calcular Frete</h3>
+                <ShippingCalculator 
+                  :items="cartItemsForShipping" 
+                  @shipping-selected="handleShippingSelected"
+                  :useCartStore="true"
+                  class="shipping-cart-style"
+                />
+              </div>
+              
               <div class="flex justify-between">
                 <span class="text-gray-600">Frete</span>
-                <span class="font-semibold">R$ {{ formatPrice(frete) }}</span>
+                <span v-if="!cartStore.selectedShipping" class="font-semibold">Calcule acima</span>
+                <span v-else class="font-semibold">R$ {{ formatPrice(cartStore.selectedShipping.price) }}</span>
               </div>
               
               <div class="border-t border-gray-200 pt-4">
                 <div class="flex justify-between">
                   <span class="text-lg font-bold text-gray-800">Total</span>
                   <span class="text-lg font-bold text-[#9810FA]">
-                    R$ {{ formatPrice(cartStore.totalAmount + frete) }}
+                    R$ {{ formatPrice(cartStore.cartTotal) }}
                   </span>
                 </div>
               </div>
             </div>
+            
+            <!-- Endereço de Entrega -->
+            <div v-if="cartStore.shippingAddress" class="mt-6 border-t pt-4">
+              <h3 class="text-md font-semibold text-gray-700 mb-2">Endereço de Entrega</h3>
+              <div class="bg-gray-50 p-3 rounded-md text-sm">
+                <p>{{ cartStore.shippingAddress.logradouro }}</p>
+                <p>{{ cartStore.shippingAddress.bairro }}</p>
+                <p>{{ cartStore.shippingAddress.localidade }} - {{ cartStore.shippingAddress.uf }}</p>
+                <p>CEP: {{ cartStore.shippingAddress.cep }}</p>
+              </div>
+            </div>
 
-            <button class="w-full bg-[#9810FA] text-white py-3 rounded-md mt-6 hover:bg-[#8609d8] transition-colors">
+            <button 
+              class="w-full bg-[#9810FA] text-white py-3 rounded-md mt-6 hover:bg-[#8609d8] transition-colors" 
+              :disabled="!cartStore.selectedShipping"
+              @click="finalizarCompra"
+            >
               Finalizar Compra
             </button>
+            
+            <p v-if="!cartStore.selectedShipping" class="text-center text-sm text-gray-600 mt-2">
+              Selecione uma opção de frete para continuar
+            </p>
           </div>
         </div>
       </div>
@@ -101,9 +150,55 @@
 
 <script setup lang="ts">
 import { useCartStore } from '@/stores/cartStore'
+import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import ShippingCalculator from '@/components/ShippingCalculator.vue'
 
 const cartStore = useCartStore()
-const frete = 10.00
+const authStore = useAuthStore()
+const router = useRouter()
+
+// Formatar os itens do carrinho para o cálculo de frete
+const cartItemsForShipping = computed(() => {
+  return cartStore.items.map(item => ({
+    width: 20, // Valores padrão ou obter de algum lugar se disponível
+    height: 15,
+    length: 10,
+    weight: 0.5,
+    quantity: item.quantity
+  }))
+})
+
+// Quando um frete é selecionado
+const handleShippingSelected = (option: {service: string, price: number, days: string, code: string}) => {
+  cartStore.setShipping(option)
+}
+
+// Função para finalizar a compra
+const finalizarCompra = async () => {
+  if (!cartStore.selectedShipping) {
+    return
+  }
+  
+  // Verifica se o usuário está autenticado
+  if (!authStore.isAuthenticated) {
+    // Salva a URL atual para redirecionamento após o login
+    localStorage.setItem('redirectAfterLogin', '/checkout')
+    
+    // Redireciona para a página de login
+    router.push('/login')
+    return
+  }
+  
+  // Se estiver autenticado, sincroniza o carrinho e prossegue para o checkout
+  try {
+    await cartStore.saveToBackend()
+    router.push('/checkout')
+  } catch (error) {
+    console.error('Erro ao finalizar compra:', error)
+  }
+}
 
 const formatPrice = (price: string | number) => {
   const numPrice = typeof price === 'string' ? parseFloat(price.replace(',', '.')) : price
@@ -129,129 +224,42 @@ h1 {
   margin-bottom: 2rem;
 }
 
-.cart-content {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-}
-
-.cart-items {
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.cart-item {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-.item-image {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.item-info {
-  flex: 1;
-  padding: 0 1rem;
-}
-
-.item-price {
-  color: #8B008B;
-  font-weight: bold;
-}
-
-.item-quantity {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.item-quantity button {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.remove-btn {
-  background: none;
+.shipping-cart-style {
+  padding: 0;
   border: none;
-  color: #ff4444;
-  cursor: pointer;
-  padding: 0.5rem;
+  background: transparent;
 }
 
-.cart-summary {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
+.shipping-cart-style :deep(.border) {
+  border-color: #e5e7eb;
 }
 
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  margin: 1rem 0;
+.shipping-cart-style :deep(h3) {
+  display: none;
 }
 
-.total {
-  font-weight: bold;
-  font-size: 1.2rem;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+/* Removendo as cores roxas dos botões no carrinho */
+.shipping-cart-style :deep(button) {
+  /* Não definimos cor de fundo aqui para usar o padrão do componente */
 }
 
-.checkout-btn {
-  width: 100%;
-  padding: 1rem;
-  background: #8B008B;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+.shipping-cart-style :deep(button:hover) {
+  /* Não definimos cor de hover aqui para usar o padrão do componente */
 }
 
-.checkout-btn:hover {
-  background: #6a006a;
+/* Adicionando cor roxa apenas para botões específicos */
+.shipping-cart-style :deep(button.rounded-r),
+.shipping-cart-style :deep(.w-full button),
+.shipping-cart-style :deep(button.mt-1),
+.shipping-cart-style :deep(button.w-full) {
+  background-color: #9810FA !important;
+  color: white !important;
 }
 
-.empty-cart {
-  text-align: center;
-  padding: 4rem 0;
-}
-
-.empty-cart i {
-  font-size: 4rem;
-  color: #ddd;
-  margin-bottom: 1rem;
-}
-
-.continue-shopping {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.8rem 1.5rem;
-  background: #8B008B;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background-color 0.3s ease;
-}
-
-.continue-shopping:hover {
-  background: #6a006a;
-}
-
-@media (max-width: 768px) {
-  .cart-content {
-    grid-template-columns: 1fr;
-  }
+.shipping-cart-style :deep(button.rounded-r:hover),
+.shipping-cart-style :deep(.w-full button:hover),
+.shipping-cart-style :deep(button.mt-1:hover),
+.shipping-cart-style :deep(button.w-full:hover) {
+  background-color: #8609d8 !important;
 }
 </style> 

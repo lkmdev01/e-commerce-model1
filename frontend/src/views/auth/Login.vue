@@ -120,13 +120,23 @@ const handleLogin = async () => {
     // Login feito com sucesso
     await authStore.login(form.value);
     
-    // Verificar o papel do usuário para redirecionar corretamente
-    if (authStore.user?.role === 'admin') {
-      // Administrador vai para o dashboard principal
-      router.push('/dashboard');
+    // Verificar se existe um redirecionamento pendente após o login
+    const redirectUrl = localStorage.getItem('redirectAfterLogin');
+    
+    if (redirectUrl) {
+      // Limpa o redirecionamento armazenado
+      localStorage.removeItem('redirectAfterLogin');
+      // Redireciona para a URL salva
+      router.push(redirectUrl);
     } else {
-      // Usuário normal vai para o perfil
-      router.push('/dashboard/profile');
+      // Comportamento padrão: verificar o papel do usuário
+      if (authStore.user?.role === 'admin') {
+        // Administrador vai para o dashboard principal
+        router.push('/dashboard');
+      } else {
+        // Usuário normal vai para o perfil
+        router.push('/dashboard/profile');
+      }
     }
   } catch (e: any) {
     console.error('Erro ao fazer login:', e);

@@ -72,4 +72,12 @@ class User extends Authenticatable
     {
         return $this->addresses()->where('is_default', true)->first();
     }
+
+    /**
+     * Obtém o carrinho do usuário.
+     */
+    public function cart()
+    {
+        return $this->hasOne(Cart::class)->with('items');
+    }
 }
